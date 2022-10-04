@@ -1,5 +1,5 @@
 
-export const _interruptableDealy = (ms: number) => {
+export const interruptableDelay = (ms: number) => {
     let timer: null | number = null;
     const promise = new Promise((resolve) => {
         timer = window.setTimeout(resolve, ms)

@@ -1,6 +1,6 @@
 // Reference
 
-import merge from "lodash.merge"
+import lodashMerge from "lodash.merge"
 
 type GetObjDifferentKeys<
     T,
@@ -45,6 +45,6 @@ export type DeepMergeTwoTypes<T, U> =
     ? MergeTwoObjects<T, U>
     : T | U
 
-export function _merge<T, U>(obj1: T, obj2: U): DeepMergeTwoTypes<T, U> {
-    return merge(obj1, obj2) as DeepMergeTwoTypes<T, U>
+export function merge<T, U>(obj1: T, obj2: U): DeepMergeTwoTypes<T, U> {
+    return lodashMerge(obj1, obj2) as DeepMergeTwoTypes<T, U>
 }

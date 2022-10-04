@@ -6,14 +6,13 @@
  * Copyright (c) 2020 Chae SeungWoo
  */
 
-import { assemble, disassemble } from 'hangul-js';
 import { generateTextProcess } from './text/generateTextProcess';
-import type { Options, EventRecord, TypingTaskEvent, TypingEachTextEvent, TypingObserver, TextProcessResult } from './@typing';
-import { _merge } from './util/deepMerge';
-import { _dispatchEvent } from './util/dispatchEvent';
-import { _setText } from './util/dom/setText';
-import { _calucateIntervalDealy } from './util/humanize/calucateIntervalDealy';
-import { _interruptableDealy } from './util/interruptableDealy';
+import type { Options, TypingTaskEvent, TypingEachTextEvent, TypingObserver, TextProcessResult } from './@typing';
+import { merge } from './util/deepMerge';
+import { dispatchEvent } from './util/dispatchEvent';
+import { setDomValue } from './util/dom/setDomValue';
+import { calucateIntervalDelay } from './util/humanize/calucateIntervalDelay';
+import { interruptableDelay } from './util/interruptableDealy';
 import { noop } from './util/noop';
 
 
@@ -53,8 +52,8 @@ async function* generateTextWithInterrupt(options: Options) {
         switch (type) {
             case "typing":
             case "erase":
-                const intervalDealy = _calucateIntervalDealy(options);
-                const dealyObject = _interruptableDealy(intervalDealy);
+                const intervalDealy = calucateIntervalDelay(options);
+                const dealyObject = interruptableDelay(intervalDealy);
                 interruptHandler = dealyObject.interrupt;
                 yield mergeResponse(response, `before-${type}`);
                 await dealyObject.promise;
@@ -62,7 +61,7 @@ async function* generateTextWithInterrupt(options: Options) {
                 yield mergeResponse(response, `after-${type}`);
                 break;
             case "typing-end":
-                const inputEndDealy = _interruptableDealy(options.sectionIntervalType);
+                const inputEndDealy = interruptableDelay(options.sectionIntervalType);
                 interruptHandler = inputEndDealy.interrupt;
                 yield mergeResponse(response, type);
                 await inputEndDealy.promise;
@@ -84,7 +83,7 @@ async function* generateTextWithRepeat(
 export function type(target: HTMLElement, optionPayload: Partial<Options>) {
 
     // 기본 옵션 적용
-    const options = _merge(DEFAULT_OPTIONS, optionPayload) as Options;
+    const options = merge(DEFAULT_OPTIONS, optionPayload) as Options;
 
     // 타이핑 인터벌 시작
     const startOption: TypingTaskEvent = {
@@ -94,7 +93,7 @@ export function type(target: HTMLElement, optionPayload: Partial<Options>) {
     //@TODO: side effect 로 변수가 강제로 있는게 사실 그리 보기좋진않은데... 흠...
     let interruptHandler = noop;
     const typingAction = async () => {
-        _dispatchEvent(target, 'th.startType', startOption)
+        dispatchEvent(target, 'th.startType', startOption)
         for await (const { type, text, step, interrupt, } of generateTextWithRepeat(options)) {
             const eventObject: TypingEachTextEvent = {
                 ...startOption,
@@ -105,17 +104,17 @@ export function type(target: HTMLElement, optionPayload: Partial<Options>) {
             switch (type) {
                 case "typing":
                 case "erase":
-                    _setText(target, text);
+                    setDomValue(target, text);
                     break;
                 case "before-typing":
-                    _dispatchEvent(target, 'th.beforeType', eventObject);
+                    dispatchEvent(target, 'th.beforeType', eventObject);
                     break;
                 case "after-typing":
-                    _dispatchEvent(target, 'th.afterType', eventObject);
+                    dispatchEvent(target, 'th.afterType', eventObject);
                     break;
             }
         }
-        _dispatchEvent(target, 'th.endType', startOption)
+        dispatchEvent(target, 'th.endType', startOption)
     }
     typingAction()
     return () => {
@@ -129,7 +128,7 @@ export function observe(
     optionPayload: Partial<Options>
 ) {
     let interruptHandler = noop;
-    const options = _merge(DEFAULT_OPTIONS, optionPayload) as Options;
+    const options = merge(DEFAULT_OPTIONS, optionPayload) as Options;
     const runner = async () => {
         for await (const { type, text, step, interrupt } of generateTextWithRepeat(options)) {
             interruptHandler = interrupt;
